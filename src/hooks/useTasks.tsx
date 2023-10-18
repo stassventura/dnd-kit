@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Task, Id } from '../types';
-import Helpers from '../helpers/Helpers';
+import { helpers } from '../helpers';
 
 function useTasks() {
-  const { generateId } = Helpers();
+  const id = helpers.generateId();
   const initialTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
 
@@ -13,7 +13,7 @@ function useTasks() {
 
   const createTask = (columnId: Id) => {
     const newTask: Task = {
-      id: generateId(),
+      id,
       columnId,
       content: `Task ${tasks.length + 1}`,
     };

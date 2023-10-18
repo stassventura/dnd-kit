@@ -1,10 +1,10 @@
-import Helpers from '../helpers/Helpers';
+import { helpers } from '../helpers';
 import useTasks from './useTasks';
 import { Column, Id } from '../types';
 import { useState, useEffect, useMemo } from 'react';
 
 function useColumns() {
-  const { generateId } = Helpers();
+  const id = helpers.generateId();
   const { tasks, setTasks } = useTasks();
   const initialColumns = JSON.parse(localStorage.getItem('columns') || '[]');
   const [columns, setColumns] = useState<Column[]>(initialColumns);
@@ -16,14 +16,13 @@ function useColumns() {
 
   const createNewColumn = () => {
     const columnToAdd: Column = {
-      id: generateId(),
+      id,
       title: `New Column`,
     };
     setColumns((prevColumns) => [...prevColumns, columnToAdd]);
   };
 
   const deleteColumn = (id: Id) => {
-    console.log(id);
     const filteredColumns = columns.filter((col) => col.id !== id);
     setColumns(filteredColumns);
     const newTasks = tasks.filter((t) => t.columnId !== id);
