@@ -1,83 +1,96 @@
-import PlusIcon from '../icons/PlusIcon';
 import ColumnContainer from './ColumnContainer';
-import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import useColumns from '../hooks/useColumns';
+import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { SortableContext } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
-import TaskCard from './TaskCard';
-import useTasks from '../hooks/useTasks';
 import useDrag from '../hooks/useDrag';
+import TaskCard from './TaskCard';
+import { Item, ItemField } from '../types';
+import React, { useEffect, useState } from 'react';
+import FilterIcon from '../icons/TrashIcon';
+import useDndSensors from '../hooks/useDndSensors';
+import { sortItemsByPriority } from '../helpers/sortItemsByPriority';
 
-export default function KanbanBoard() {
-  const { tasks, setTasks, createTask, deleteTask, updateTask } = useTasks();
-  const { columns, setColumns, columnsId, createNewColumn, deleteColumn, updateColumn } =
-    useColumns();
+interface KanbanBoardProps {
+  initialColumns: string[];
+  initialItems: Item[];
+  itemComponent: React.FC<{ task: Item }>;
+  itemField: ItemField;
+  onChange: (items: Item[]) => void;
+}
+
+const KanbanBoard: React.FC<KanbanBoardProps> = ({
+  initialColumns,
+  initialItems,
+  itemComponent,
+  onChange,
+  itemField,
+}) => {
+  const [columns, setColumns] = useState<string[]>(initialColumns);
+  const [items, setItems] = useState<Item[]>(initialItems);
+  const { sensors } = useDndSensors();
   const { onDragStart, onDragEnd, onDragOver, activeColumn, activeTask } = useDrag({
-    setColumns,
-    setTasks,
     columns,
-    tasks,
+    setColumns,
+    items,
+    setItems,
+    itemField,
   });
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 3,
-      },
-    }),
-  );
+
+  useEffect(() => {
+    onChange(items);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
+  const onSortClick = () => {
+    setItems(sortItemsByPriority);
+  };
 
   return (
-    <div className="mx-auto flex min-h-screen w-full items-center overflow-x-auto overflow-y-hidden px-[40px] container ">
-      <DndContext
-        sensors={sensors}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-        onDragOver={onDragOver}>
-        <div className="m-auto flex gap-4 flex-col  w-full p-3 min-h-screen">
-          <button
-            className="h-[60px] w-[350px] min-w-[350px] cursor-pointer rounded-lg bg-mainBackgroundColor border-2 border-columnBackgroundColor ring-rose-500 hover:ring-2 flex gap-2 p-4"
-            onClick={() => createNewColumn()}>
-            <PlusIcon />
-            Add Column
-          </button>
-          <div className="flex gap-2 flex-wrap">
-            <SortableContext items={columnsId}>
-              {columns.map((col) => (
-                <ColumnContainer
-                  column={col}
-                  key={col.id}
-                  deleteColumn={deleteColumn}
-                  updateColumn={updateColumn}
-                  createTask={createTask}
-                  tasks={tasks.filter((task) => task.columnId === col.id)}
-                  deleteTask={deleteTask}
-                  updateTask={updateTask}
-                />
-              ))}
-            </SortableContext>
+    <>
+      <div className="mx-auto w-full items-center overflow-x-auto overflow-y-hidden px-[40px] container p-3">
+        <button
+          className="uppercase h-[60px] w-[350px] min-w-[350px] cursor-pointer rounded-lg bg-mainBackgroundColor border-2 border-columnBackgroundColor ring-rose-500 hover:ring-2 flex gap-2 p-4 mb-4"
+          onClick={onSortClick}>
+          <FilterIcon />
+          sort by priority
+        </button>
+        <DndContext
+          sensors={sensors}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onDragOver={onDragOver}>
+          <div className="m-auto flex gap-4 flex-col  w-full">
+            <div className="flex gap-2 flex-wrap ">
+              <SortableContext items={columns}>
+                {columns.map((col) => (
+                  <ColumnContainer
+                    column={col}
+                    key={col}
+                    items={items.filter((item) => item[itemField] === col)}
+                    itemComponent={itemComponent}
+                  />
+                ))}
+              </SortableContext>
+            </div>
           </div>
-        </div>
-
-        {createPortal(
-          <DragOverlay>
-            {activeColumn ? (
-              <ColumnContainer
-                column={activeColumn}
-                deleteColumn={deleteColumn}
-                updateColumn={updateColumn}
-                createTask={createTask}
-                tasks={tasks.filter((task) => task.columnId === activeColumn.id)}
-                deleteTask={deleteTask}
-                updateTask={updateTask}
-              />
-            ) : null}
-            {activeTask ? (
-              <TaskCard task={activeTask} deleteTask={deleteTask} updateTask={updateTask} />
-            ) : null}
-          </DragOverlay>,
-          document.body,
-        )}
-      </DndContext>
-    </div>
+          {createPortal(
+            <DragOverlay>
+              {activeColumn ? (
+                <ColumnContainer
+                  column={activeColumn}
+                  key={activeColumn}
+                  items={items.filter((item) => item[itemField] === activeColumn)}
+                  itemComponent={itemComponent}
+                />
+              ) : null}
+              {activeTask ? <TaskCard task={activeTask} /> : null}
+            </DragOverlay>,
+            document.body,
+          )}
+        </DndContext>
+      </div>
+    </>
   );
-}
+};
+
+export default KanbanBoard;

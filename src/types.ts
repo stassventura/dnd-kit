@@ -1,12 +1,9 @@
-export type Id = string | number;
+export type ItemField = keyof Item;
 
-export type Column = {
-  id: Id;
+export type Item = {
+  id: number;
   title: string;
-};
-
-export type Task = {
-  id: Id;
-  columnId: Id;
-  content: string;
+  description: string;
+  status: string;
+  priority: string;
 };
